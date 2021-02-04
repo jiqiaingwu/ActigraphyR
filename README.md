@@ -1,1 +1,1 @@
-# ActigraphyR
+# ActigraphyUtah
