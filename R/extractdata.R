@@ -38,6 +38,12 @@ extractdata = function(table_raw,initalize){
   dt4<-data.frame(split_table[10])
   colnames(dt4) <- data.frame(split_table[9])[1,]
 
+  dt5<-t(data.frame(split_table[1])[,-3])
+  colnames(dt5) <- dt5[1,]
+  dt5 <- dt5[-1, ]
+  dt6 <- str_split(dt5, "_", simplify = TRUE)
+  dt6 <- dt6[,-3 ]
+  names(dt6) <- c("Participant_ID", "Event Time")
 
   ##Divded day data and summary data for part 4
   dt4b <- dt4[!(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
@@ -142,9 +148,9 @@ extractdata = function(table_raw,initalize){
   big_data2
 
 
-  newdata <- as.data.frame(cbind.fill(finaldata,big_data2))
+  newdata <- as.data.frame(cbind.fill(t(dt6),big_data2,finaldata))
   rownames(newdata) <- c()
-  newdata<-newdata[,-c(8,22,23,24,25)]
+  newdata<-newdata[,-c(3,12,24,25,27,29)]
 
 
   Date_Study<- as.numeric(levels(Date_Study))[Date_Study]
@@ -316,7 +322,7 @@ extractdata = function(table_raw,initalize){
                                                                                 "WASO.SLEEP","Sleep.Time.SLEEP","Fragmentation.SLEEP","Exposure.White.SLEEP","Avg.White.SLEEP","Start.Time.DAILY",
                                                                                 "End.Time.DAILY","Duration.DAILY","Off.Wrist.DAILY","Total.AC.DAILY","WASO.DAILY","Sleep.Time.DAILY",
                                                                                 "Fragmentation.DAILY","Exposure.White.DAILY","Avg.White.DAILY"), direction="wide")
-  df.means6 <- cbind(newdata,newdt4,df.means5)
+  df.means6 <- cbind(newdata,df.means5,newdt4)
   df.means6t <- t(df.means6)
   df.means7t <-  na.omit(df.means6t)
   #df.means7 <- t(df.means7t)
