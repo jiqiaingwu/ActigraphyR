@@ -7,7 +7,7 @@
 
 split_direction <- function(df,direction = "col"){
   if(direction == "col"){
-    col_has_data <- unname(map_lgl(df,~!all(is.na(.x))))
+    col_has_data <- unname(map_lgl(df,~!all(is.na(.x)))) ## map_lgl() returns a logical vector
     df_mapping <- make_df_index(col_has_data)
     out <- map(df_mapping,~df[,.x])
   } else if(direction == "row"){
