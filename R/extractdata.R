@@ -18,34 +18,28 @@
 extractdata = function(table_raw,initalize){
 
 
+
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
   split_table <- table_raw %>%
     split_df(complexity = 2)
 
-  ##Finally, we got 17 seperate tables. We only need 3,5,7,9,10.(Maybe 16&17)
-  dt1<-t(data.frame(split_table[3])[,-3])
-  colnames(dt1) <- dt1[1,]
-  dt1 <- dt1[-1, ]
-
+  ##Finally, we got 17 seperate tables. We only need 5,7,9,10.
   dt2<-t(data.frame(split_table[5])[,-3])
-  colnames(dt2) <- dt2[1,]
-  dt2 <- dt2[-1, ]
 
   dt3<-t(data.frame(split_table[7])[,-3])
-  colnames(dt3) <- dt3[1,]
-  dt3 <- dt3[-1, ]
 
   dt4<-data.frame(split_table[10])
   colnames(dt4) <- data.frame(split_table[9])[1,]
 
-  dt5<-t(data.frame(split_table[1])[,-3])
-  colnames(dt5) <- dt5[1,]
+  dt5<-t(as.data.frame(split_table[1])[3,])
   dt5 <- dt5[-1, ]
   dt6 <- str_split(dt5, "_", simplify = TRUE)
-  dt6 <- dt6[,-3 ]
+  #dt6 <- as.data.frame(t(dt6[,-3 ]))
+  dt6 <- dt6[,-3]
   names(dt6) <- c("Participant_ID", "Event Time")
 
-  ##Divded day data and summary data for part 4
+
+  ##Divided day data and summary data for part 4
   dt4b <- dt4[!(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
 
   #Note: The origin date point are different between R & Excel
@@ -58,7 +52,6 @@ extractdata = function(table_raw,initalize){
   time <- dt4b[,c("End Time","Interval Type")]
   time$time <- round(as.numeric(time$`End Time`)*24,2)
   time0 <- time %>% separate(time, c("hour", "min"))
-  #time <- as.data.frame(do.call(rbind, strsplit(as.character(round(as.numeric(dt4b$`End Time`)*24,2)),"\\.")))
   time0$min2 <- round(as.numeric(time0$min)*0.6,0)
   time0$min2[is.na(time0$min2)] <- "00"
   time0$time <- paste0(time0$hour,":",time0$min2)
@@ -71,7 +64,6 @@ extractdata = function(table_raw,initalize){
   time <- dt4b[,c("Start Time","Interval Type")]
   time$time <- round(as.numeric(time$`Start Time`)*24,2)
   time0 <- time %>% separate(time, c("hour", "min"))
-  #time <- as.data.frame(do.call(rbind, strsplit(as.character(round(as.numeric(dt4b$`End Time`)*24,2)),"\\.")))
   time0$min2 <- round(as.numeric(time0$min)*0.6,0)
   time0$min2[is.na(time0$min2)] <- "00"
   time0$time <- paste0(time0$hour,":",time0$min2)
@@ -81,18 +73,17 @@ extractdata = function(table_raw,initalize){
   dt4b$`Start Day` <- weekdays(dt4b$`Start Date`)
 
 
-  ##Some variables could be directly extract, I plan to save them in final dataset
-  dt2 <-as.data.frame(dt2[c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
-  rownames(dt2) <- gsub(":", "", rownames(dt2), fixed = T)
+  dt2 <-as.data.frame(dt2[,c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
 
-  dt3 <- as.data.frame(dt3)
-  rownames(dt3) <- gsub(":", "", rownames(dt3), fixed = T)
-
-  #COmbine part 2 and part 3 togther
-  finaldata <- data.frame(cbind.fill(t(dt2),t(dt3)))
+  #Combine part 2 and part 3 together
+  finaldata <- data.frame(cbind.fill(dt2,dt3))
   rownames(finaldata) <- c()
+  colnames(finaldata) <- finaldata[1,]
+  finaldata <- finaldata[-1, ]
+  colnames(finaldata) <- gsub(":", "", colnames(finaldata), fixed = T)
 
 
+  ####Start with initalize sheet
   split_initalize <- initalize %>%
     split_df(complexity = 2)
 
@@ -110,7 +101,6 @@ extractdata = function(table_raw,initalize){
   for(i in 2:15){
     if(ncol(data.frame(split_initalize[i]))>1){
       df<-data.frame(t(data.frame(split_initalize[i]))[,-3])
-      #names(df) <- df[1,]
       df <- df[2, c(2,4)]
       listofdfs[[i]] <- df
     }
@@ -119,9 +109,12 @@ extractdata = function(table_raw,initalize){
 
   #Combine all useful info in initalize sheet
   big_data = do.call(rbind, listofdfs)
+  big_data
+  big_data[order(big_data$X4), ]
 
 
   big_data$day_cat <- apply(big_data, 1, function(r) any(r %in% c("Monday","Tuesday","Wednesday","Thursday","Sunday")))
+  #big_data$day_cat <- apply(big_data, 1, function(r) any(r %in% c("Monday","Tuesday","Wednesday","Thursday","Friday")))
   X4 <- big_data$X4
   big_data$X4 <- as.numeric(X4)
   big_data$number_days<-max(as.numeric(big_data$X4),na.rm=T)
@@ -132,11 +125,10 @@ extractdata = function(table_raw,initalize){
   big_data$weekendday
 
   big_data1<-big_data[1,4:6]
-  big_data1
+
 
   big_data2 <- as.data.frame(cbind.fill(t(initalize1),big_data1))
   rownames(big_data2) <- c()
-  names(big_data2)
 
   Date_Scored <- big_data2$`Date Scored`
   big_data2$`Date Scored` <- as.numeric(Date_Scored)
@@ -145,16 +137,12 @@ extractdata = function(table_raw,initalize){
 
   big_data2$`Date Scored` <- as.Date(as.numeric(big_data2$`Date Scored`),origin = "1899-12-30")
   big_data2$`Date of Study` <- as.Date(as.numeric(big_data2$`Date of Study`),origin = "1899-12-30")
-  big_data2
 
 
   newdata <- as.data.frame(cbind.fill(t(dt6),big_data2,finaldata))
   rownames(newdata) <- c()
   newdata<-newdata[,-c(3,12,24,25,27,29)]
 
-
-  Date_Study<- as.numeric(levels(Date_Study))[Date_Study]
-  Date_Study <- as.Date(as.numeric(Date_Study),origin = "1899-12-30")
 
   initalize2<-as.numeric(unlist(initalize2))
   dt4b$`Interval#` <- as.numeric(dt4b$`Interval#`)
@@ -163,12 +151,13 @@ extractdata = function(table_raw,initalize){
 
   newdt$day_cat <- "weekday"
   newdt$day_cat[newdt$`Start Day` %in% c("Saturday", "Friday")] <- "weekend"
-  #newdt$day_cat[newdt$`Start Day` %in% c("Saturday", "Sunday")] <- "weekend"
 
   newdt_active <- newdt[newdt$`Interval Type` %in% c("ACTIVE"),]
   newdt_rest <- newdt[newdt$`Interval Type` %in% c("REST"),]
   newdt_sleep <- newdt[newdt$`Interval Type` %in% c("SLEEP"),]
   newdt_daily <- newdt[newdt$`Interval Type` %in% c("DAILY"),]
+
+
 
 
 
@@ -208,8 +197,7 @@ extractdata = function(table_raw,initalize){
   df.means1<-df.means1[,-c(2:3),drop=FALSE]
 
 
-
-  #####################Reshape to one row#############
+    #####################Reshape to one row#############
   df.means <- df.means[df.means$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
   df.means1 <- df.means1[df.means1$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
 
@@ -219,28 +207,22 @@ extractdata = function(table_raw,initalize){
                                                                                                  "Avg_Efficiency_byday","Avg_Onset_Latency_byday",
                                                                                                  "avg_starttime_byday","avg_endtime_byday"), direction="wide")
 
-  df.means3<-data.frame(t(gsub("mins", "", t(df.means3), fixed = TRUE)))
-  names(df.means3) <- gsub("byday.", "", names(df.means3),fixed = TRUE)
+  df.means3<-data.frame(gsub("mins", "", t(df.means3), fixed = TRUE))
+  rownames(df.means3) <- gsub("byday.", "", rownames(df.means3),fixed = TRUE)
 
 
   #Create ID variable, then Combine byday and overall data together.
   df.means1$ID <- 1
-  names(df.means3)[1] <- "Interval Type"
-  df.means4 <- merge(df.means1,df.means3,by="Interval Type")
-  # df.means3 <- reshape(data=df.means1,v.names = "Interval Type",timevar = c("Avg_Duration_overall","Avg_Sleep_Time_overall",
-  #                                                                                             "Avg_WASO_overall","Avg_Fragmentation_overall",
-  #                                                                                             "Avg_Efficiency_overall","Avg_Onset_Latency_overall",
-  #                                                                                             "Avg_Off_Wrist_overall","Avg_Total_AC_overall","Avg_Exp_White_overall",
-  #                                                                                             "Avg_Avg_White_overall","avg_starttime_overall","avg_endtime_overall"), direction="wide")
+  df.means4 <- merge(df.means1,t(df.means3),by="Interval Type")
 
   df.means5 <- reshape(data=df.means4,idvar = "ID", timevar =c("Interval Type"), v.names = c("Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
-                                                                                           "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
-                                                                                           "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall","avg_starttime_overall",
-                                                                                           "avg_endtime_overall","Avg_Duration_weekday","Avg_Sleep_Time_weekday",
-                                                                                           "Avg_WASO_weekday","Avg_Fragmentation_weekday","Avg_Efficiency_weekday","Avg_Onset_Latency_weekday",
-                                                                                           "avg_starttime_weekday","avg_endtime_weekday","Avg_Duration_weekend","Avg_Sleep_Time_weekend",
-                                                                                           "Avg_WASO_weekend","Avg_Fragmentation_weekend","Avg_Efficiency_weekend","Avg_Onset_Latency_weekend",
-                                                                                           "avg_starttime_weekend","avg_endtime_weekend"), direction="wide")
+                                                                                             "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
+                                                                                             "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall","avg_starttime_overall",
+                                                                                             "avg_endtime_overall","Avg_Duration_weekday","Avg_Sleep_Time_weekday",
+                                                                                             "Avg_WASO_weekday","Avg_Fragmentation_weekday","Avg_Efficiency_weekday","Avg_Onset_Latency_weekday",
+                                                                                             "avg_starttime_weekday","avg_endtime_weekday","Avg_Duration_weekend","Avg_Sleep_Time_weekend",
+                                                                                             "Avg_WASO_weekend","Avg_Fragmentation_weekend","Avg_Efficiency_weekend","Avg_Onset_Latency_weekend",
+                                                                                             "avg_starttime_weekend","avg_endtime_weekend"), direction="wide")
 
   df.means5$Avg_Duration_overall.DAILY<-NA
   df.means5$Avg_Sleep_Time_overall.DAILY<-NA
@@ -281,8 +263,8 @@ extractdata = function(table_raw,initalize){
 
 
   newdt1 <- newdt[newdt$`Interval Type` %in% c('DAILY','REST','SLEEP'), c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist",
-                                                                        "Total AC","Onset Latency","Efficiency","WASO",
-                                                                        "Sleep Time","Fragmentation","Exposure White","Avg White")]
+                                                                          "Total AC","Onset Latency","Efficiency","WASO",
+                                                                          "Sleep Time","Fragmentation","Exposure White","Avg White")]
 
 
   newdt2 <- reshape(data=newdt1,idvar = "Interval#", timevar =c("Interval Type"), v.names = c("Start Time","End Time","Duration","Off-Wrist",
@@ -325,7 +307,6 @@ extractdata = function(table_raw,initalize){
   df.means6 <- cbind(newdata,df.means5,newdt4)
   df.means6t <- t(df.means6)
   df.means7t <-  na.omit(df.means6t)
-  #df.means7 <- t(df.means7t)
 
   df.means7<-data.frame(t(gsub("mins", "", df.means7t, fixed = TRUE)))
   names(df.means7) <- gsub(".", "_", names(df.means7), fixed = T)
