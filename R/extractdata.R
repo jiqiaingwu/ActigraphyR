@@ -15,79 +15,61 @@
 ## Step 7. Data cleaning for byday summary
 ## Step 8. Combine all data together
 
-extractdata = function(table_raw,initalize){
-
+extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE){
 
 
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
   split_table <- table_raw %>%
     split_df(complexity = 2)
 
-  ##Finally, we got 17 seperate tables. We only need 5,7,9,10.
-  dt2<-t(data.frame(split_table[5])[,-3])
+  ##The spreadsheet contains 17 separate tables. Table 2,4,6,8 are just section titles. The tables between 11-17 won't be used right now(May revise in future version).
+  ##Here is the type of each table:
+  ##1.title(Keep)
+  ##2.section title(omit)
+  ##3.data(identifier, depend on requirement)
+  ##4.section title(omit)
+  ##5.data(keep)
+  ##6.section title(omit)
+  ##7.data(keep)
+  ##8.section title(omit)
+  ##9.variable name of table 10(keep)
+  ##10.data(keep)
+  ##11-17. (omit)
 
-  dt3<-t(data.frame(split_table[7])[,-3])
+  #----------------------------------------------------------------------------
 
-  dt4<-data.frame(split_table[10])
-  colnames(dt4) <- data.frame(split_table[9])[1,]
-
-  dt5<-t(as.data.frame(split_table[1])[3,])
-  dt5 <- dt5[-1, ]
-  dt6 <- str_split(dt5, "_", simplify = TRUE)
+  ##In table 1, analysis name is the only useful information.
+  table1<-t(as.data.frame(split_table[1])[3,])
+  table1 <- table1[-1, ]
+  table1a <- str_split(table1, "_", simplify = TRUE)
   #dt6 <- as.data.frame(t(dt6[,-3 ]))
-  dt6 <- dt6[,-3]
-  names(dt6) <- c("Participant_ID", "Event Time")
+  table1a <- table1a[,-3]
+  names(table1a) <- c("Participant_ID", "Event Time")
 
+  ##In table 3, all variables are identifiers. The default setting is omitting.
+  if(identifier=TRUE){
+    table3<-t(data.frame(split_table[3])[,-3]) #delete the units
+  } else {
+    table3<-c()
+  }
 
-  ##Divided day data and summary data for part 4
-  dt4b <- dt4[!(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
+  ##Output Table 5
+  table5<-t(data.frame(split_table[5])[,-3]) #delete the units
 
-  #Note: The origin date point are different between R & Excel
-  #Convert date variables
-  dt4b$`Start Date` <- as.Date(as.numeric(dt4b$`Start Date`), origin = "1899-12-30")
-  dt4b$`End Date` <- as.Date(as.numeric(dt4b$`End Date`), origin = "1899-12-30")
+  ##Output Table 7
+  table7<-t(data.frame(split_table[7])[,-3]) #delete the units
 
+  ##Output Table 10, table 9 should be the variable name of table 10. Need to combine them together.
+  table10<-data.frame(split_table[10])
+  colnames(table10) <- data.frame(split_table[9])[1,]
 
-  # Work on time variables
-  time <- dt4b[,c("End Time","Interval Type")]
-  time$time <- round(as.numeric(time$`End Time`)*24,2)
-  time0 <- time %>% separate(time, c("hour", "min"))
-  time0$min2 <- round(as.numeric(time0$min)*0.6,0)
-  time0$min2[is.na(time0$min2)] <- "00"
-  time0$time <- paste0(time0$hour,":",time0$min2)
-  time0$time[time0$time == "NaN:00"] <- NA
-  dt4b$`End Time` <- time0$time
-  dt4b$`End Date`[time$time <=6 & !is.na(time$time)] <- dt4b$`End Date`-1
-  dt4b$`End Day` <- weekdays(dt4b$`End Date`)
+  #----------------------------------------------------------------------------
 
-
-  time <- dt4b[,c("Start Time","Interval Type")]
-  time$time <- round(as.numeric(time$`Start Time`)*24,2)
-  time0 <- time %>% separate(time, c("hour", "min"))
-  time0$min2 <- round(as.numeric(time0$min)*0.6,0)
-  time0$min2[is.na(time0$min2)] <- "00"
-  time0$time <- paste0(time0$hour,":",time0$min2)
-  time0$time[time0$time == "NaN:00"] <- NA
-  dt4b$`Start Time` <- time0$time
-  dt4b$`Start Date`[time$time <=6 & !is.na(time$time)] <- dt4b$`Start Date`[time$time <=6 & !is.na(time$time)]-1
-  dt4b$`Start Day` <- weekdays(dt4b$`Start Date`)
-
-
-  dt2 <-as.data.frame(dt2[,c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
-
-  #Combine part 2 and part 3 together
-  finaldata <- data.frame(cbind.fill(dt2,dt3))
-  rownames(finaldata) <- c()
-  colnames(finaldata) <- finaldata[1,]
-  finaldata <- finaldata[-1, ]
-  colnames(finaldata) <- gsub(":", "", colnames(finaldata), fixed = T)
-
-
-  ####Start with initalize sheet
+  ##Start with initialize sheet
   split_initalize <- initalize %>%
     split_df(complexity = 2)
 
-  #optimize the first part
+  ##optimize the first part
   initalize1<-t(data.frame(split_initalize[1])[,-3])
   colnames(initalize1) <- initalize1[1,]
   initalize1 <- as.data.frame(initalize1[-1, ])
@@ -96,7 +78,7 @@ extractdata = function(table_raw,initalize){
   colnames(initalize2) <- initalize2[1,]
   initalize2 <- as.data.frame(initalize2[-1,-1])
 
-  #Use loop to read day1-day7 part, and then combine them to a list
+  ##Use loop to read day1-day14 part, and then combine them to a list
   listofdfs <- list()
   for(i in 2:15){
     if(ncol(data.frame(split_initalize[i]))>1){
@@ -106,26 +88,20 @@ extractdata = function(table_raw,initalize){
     }
   }
 
-
-  #Combine all useful info in initalize sheet
+  ##Combine all useful info in initialize sheet
   big_data = do.call(rbind, listofdfs)
-  big_data
   big_data[order(big_data$X4), ]
 
-
+  ##Setup Friday and Saturday as weekend
   big_data$day_cat <- apply(big_data, 1, function(r) any(r %in% c("Monday","Tuesday","Wednesday","Thursday","Sunday")))
-  #big_data$day_cat <- apply(big_data, 1, function(r) any(r %in% c("Monday","Tuesday","Wednesday","Thursday","Friday")))
   X4 <- big_data$X4
   big_data$X4 <- as.numeric(X4)
   big_data$number_days<-max(as.numeric(big_data$X4),na.rm=T)
-  big_data$number_days
   big_data$weekday <- nrow(big_data[big_data$day_cat == TRUE,])
-  big_data$weekday
   big_data$weekendday <- nrow(big_data[big_data$day_cat == FALSE,])
-  big_data$weekendday
 
+  ##Only keep number of days, number of weekdays and number of weekends
   big_data1<-big_data[1,4:6]
-
 
   big_data2 <- as.data.frame(cbind.fill(t(initalize1),big_data1))
   rownames(big_data2) <- c()
@@ -138,28 +114,75 @@ extractdata = function(table_raw,initalize){
   big_data2$`Date Scored` <- as.Date(as.numeric(big_data2$`Date Scored`),origin = "1899-12-30")
   big_data2$`Date of Study` <- as.Date(as.numeric(big_data2$`Date of Study`),origin = "1899-12-30")
 
+  #----------------------------------------------------------------------------
 
-  newdata <- as.data.frame(cbind.fill(t(dt6),big_data2,finaldata))
+  table5 <-as.data.frame(table5[,c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
+  # table5$`Data Collection Start Date:` <- as.Date(as.numeric(table5$`Data Collection Start Date:`), origin = "1899-12-30")
+  # table5$`Data Collection End Date:` <- as.Date(as.numeric(table5$`Data Collection End Date:`), origin = "1899-12-30")
+
+  #Combine part 2 and part 3 together; correct variable name
+  finaldata <- data.frame(cbind.fill(table5,table7))
+  rownames(finaldata) <- c()
+  colnames(finaldata) <- finaldata[1,]
+  finaldata <- finaldata[-1, ]
+  colnames(finaldata) <- gsub(":", "", colnames(finaldata), fixed = T)
+
+  #----------------------------------------------------------------------------
+  ##Combine data together
+  newdata <- as.data.frame(cbind.fill(t(table1a),big_data2,finaldata))
   rownames(newdata) <- c()
   newdata<-newdata[,-c(3,12,24,25,27,29)]
 
+  #----------------------------------------------------------------------------
 
-  initalize2<-as.numeric(unlist(initalize2))
-  dt4b$`Interval#` <- as.numeric(dt4b$`Interval#`)
-  newdt <- dt4b[dt4b$`Interval#` %in% unique(initalize2), ]
+  ##Divided day data and summary data for table 10
+  if(dailydata=TRUE){
+    table10a <- table10[!(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
+
+    ##Convert date variables
+    table10a$`Start Date` <- as.Date(as.numeric(table10a$`Start Date`), origin = "1899-12-30")
+    table10a$`End Date` <- as.Date(as.numeric(table10a$`End Date`), origin = "1899-12-30")
+
+    ##Work on time variables
+    time <- table10a[,c("End Time","Interval Type")]
+    time$time <- round(as.numeric(time$`End Time`)*24,2)
+    time0 <- time %>% separate(time, c("hour", "min"))
+    time0$min2 <- round(as.numeric(time0$min)*0.6,0)
+    time0$min2[is.na(time0$min2)] <- "00"
+    time0$time <- paste0(time0$hour,":",time0$min2)
+    time0$time[time0$time == "NaN:00"] <- NA
+    table10a$`End Time` <- time0$time
+    table10a$`End Date`[time$time <=6 & !is.na(time$time)] <- table10a$`End Date`-1
+    table10a$`End Day` <- weekdays(table10a$`End Date`)
 
 
+    time <- table10a[,c("Start Time","Interval Type")]
+    time$time <- round(as.numeric(time$`Start Time`)*24,2)
+    time0 <- time %>% separate(time, c("hour", "min"))
+    time0$min2 <- round(as.numeric(time0$min)*0.6,0)
+    time0$min2[is.na(time0$min2)] <- "00"
+    time0$time <- paste0(time0$hour,":",time0$min2)
+    time0$time[time0$time == "NaN:00"] <- NA
+    table10a$`Start Time` <- time0$time
+    table10a$`Start Date`[time$time <=6 & !is.na(time$time)] <- table10a$`Start Date`[time$time <=6 & !is.na(time$time)]-1
+    table10a$`Start Day` <- weekdays(table10a$`Start Date`)
+
+  } else {
+    table10a <- table10[(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary")) ,]
+  }
+
+  #----------------------------------------------------------------------------
+
+
+  #initalize2<-as.numeric(unlist(initalize2))
+  table10a$`Interval#` <- as.numeric(table10a$`Interval#`)
+  #newdt <- table10a[table10a$`Interval#` %in% unique(initalize2), ]
+  ##Select date base on date instead of interval
+  newdt <- table10a[!is.na(table10a$`Start Date`) & (table10a$`Start Date` >= big_data2$`Date of Study`) & (table10a$`Start Date` <= (big_data2$`Date of Study`+big_data1$number_days-1)),]
+
+  ##Define weekday and weekend in Table 10
   newdt$day_cat <- "weekday"
   newdt$day_cat[newdt$`Start Day` %in% c("Saturday", "Friday")] <- "weekend"
-
-  newdt_active <- newdt[newdt$`Interval Type` %in% c("ACTIVE"),]
-  newdt_rest <- newdt[newdt$`Interval Type` %in% c("REST"),]
-  newdt_sleep <- newdt[newdt$`Interval Type` %in% c("SLEEP"),]
-  newdt_daily <- newdt[newdt$`Interval Type` %in% c("DAILY"),]
-
-
-
-
 
 
   newdt$Duration <- as.numeric(newdt$Duration)
@@ -177,8 +200,10 @@ extractdata = function(table_raw,initalize){
   newdt$newstarttime <- difftime(strptime(newdt$`Start Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
   newdt$newendtime <- difftime(strptime(newdt$`End Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
 
+  ##Calculate mean value for following variables base on weekdays and weekends.
   df.means <- aggregate(list(newdt$newstarttime, newdt$newendtime, newdt$Duration, newdt$`Sleep Time`, newdt$WASO, newdt$Fragmentation,
                              newdt$Efficiency, newdt$`Onset Latency`) ,by=list(newdt$day_cat,newdt$`Interval Type`),mean)
+  ##Give name for above variables
   names(df.means) <- c("day_cat","Interval Type","newstarttime","newendtime","Avg_Duration_byday","Avg_Sleep_Time_byday","Avg_WASO_byday",
                        "Avg_Fragmentation_byday","Avg_Efficiency_byday", "Avg_Onset_Latency_byday")
   df.means$avg_starttime_byday <- round((df.means$newstarttime) / 60,2)
@@ -186,9 +211,11 @@ extractdata = function(table_raw,initalize){
   df.means<-df.means[,-c(3:4),drop=FALSE]
 
   na.omit=T
+  ##Calculate mean value for following variables base on interval type.
   df.means1 <- aggregate(list(newdt$newstarttime, newdt$newendtime, newdt$Duration, newdt$`Sleep Time`, newdt$WASO, newdt$Fragmentation,
                               newdt$Efficiency, newdt$`Onset Latency`,newdt$`Off-Wrist`,newdt$`Total AC`,newdt$`Exposure White`,newdt$`Avg White`)
                          ,by=list(newdt$`Interval Type`),mean)
+  ##Give name for above variables
   names(df.means1) <- c("Interval Type","newstarttime","newendtime","Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
                         "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
                         "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall")
@@ -197,7 +224,7 @@ extractdata = function(table_raw,initalize){
   df.means1<-df.means1[,-c(2:3),drop=FALSE]
 
 
-    #####################Reshape to one row#############
+  #####################Reshape to one row#############
   df.means <- df.means[df.means$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
   df.means1 <- df.means1[df.means1$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
 
