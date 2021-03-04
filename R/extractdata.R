@@ -15,7 +15,7 @@
 ## Step 7. Data cleaning for byday summary
 ## Step 8. Combine all data together
 
-extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE){
+extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE,rangetype=c()){
 
 
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
@@ -206,8 +206,10 @@ extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE){
   ##Give name for above variables
   names(df.means) <- c("day_cat","Interval Type","newstarttime","newendtime","Avg_Duration_byday","Avg_Sleep_Time_byday","Avg_WASO_byday",
                        "Avg_Fragmentation_byday","Avg_Efficiency_byday", "Avg_Onset_Latency_byday")
+  ##Convert time variable
   df.means$avg_starttime_byday <- round((df.means$newstarttime) / 60,2)
   df.means$avg_endtime_byday <- round((df.means$newendtime) / 60,2)
+  ##Delete previous time variable
   df.means<-df.means[,-c(3:4),drop=FALSE]
 
   na.omit=T
@@ -219,29 +221,38 @@ extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE){
   names(df.means1) <- c("Interval Type","newstarttime","newendtime","Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
                         "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
                         "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall")
+  ##Convert time variable
   df.means1$avg_starttime_overall <- round((df.means1$newstarttime) / 60,2)
   df.means1$avg_endtime_overall <- round((df.means1$newendtime) / 60,2)
+  ##Delete previous time variable
   df.means1<-df.means1[,-c(2:3),drop=FALSE]
 
+  #----------------------------------------------------------------------------
 
-  #####################Reshape to one row#############
-  df.means <- df.means[df.means$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
-  df.means1 <- df.means1[df.means1$`Interval Type` %in% c('DAILY','REST','SLEEP'),]
+
+  #####################Reshape to one row####################
+  ##Use rangetype to define which interval type we need to use. We have 4 different interval types: Active, Daily, Sleep and Rest.
+  df.means <- df.means[df.means$`Interval Type` %in% rangetype,]
+  df.means1 <- df.means1[df.means1$`Interval Type` %in% rangetype,]
+
 
   #Melt weekday and weekend into variables. Number of row will change from 8 to 4 to match what we have for overall.
   df.means3 <- reshape(data=df.means,idvar = "Interval Type", timevar =c("day_cat"), v.names = c("Avg_Duration_byday","Avg_Sleep_Time_byday",
                                                                                                  "Avg_WASO_byday","Avg_Fragmentation_byday",
                                                                                                  "Avg_Efficiency_byday","Avg_Onset_Latency_byday",
                                                                                                  "avg_starttime_byday","avg_endtime_byday"), direction="wide")
-
+  ##Some variables' value showed the units such as mins.Need to fix it.
   df.means3<-data.frame(gsub("mins", "", t(df.means3), fixed = TRUE))
+
+  ##Some variable name included dots. Need to fix it.
   rownames(df.means3) <- gsub("byday.", "", rownames(df.means3),fixed = TRUE)
 
 
-  #Create ID variable, then Combine byday and overall data together.
+  ##Create ID variable, then Combine byday and overall data together.
   df.means1$ID <- 1
   df.means4 <- merge(df.means1,t(df.means3),by="Interval Type")
 
+  ##Combine different interval types into one row data
   df.means5 <- reshape(data=df.means4,idvar = "ID", timevar =c("Interval Type"), v.names = c("Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
                                                                                              "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
                                                                                              "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall","avg_starttime_overall",
@@ -286,10 +297,11 @@ extractdata = function(table_raw,initalize,identifier=FALSE,dailydata=TRUE){
   df.means5$avg_endtime_weekday.DAILY<-NA
   df.means5$avg_endtime_weekend.DAILY<-NA
 
+  #----------------------------------------------------------------------------
 
 
-
-  newdt1 <- newdt[newdt$`Interval Type` %in% c('DAILY','REST','SLEEP'), c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist",
+  ##Select interval type & variables we need
+  newdt1 <- newdt[newdt$`Interval Type` %in% rangetype, c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist",
                                                                           "Total AC","Onset Latency","Efficiency","WASO",
                                                                           "Sleep Time","Fragmentation","Exposure White","Avg White")]
 
