@@ -311,7 +311,7 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   newdt2$ID <- 1
 
   newdt2t <- t(newdt2)
-  newdt3t <- newdt2t[rowSums(is.na(newdt2t)) != ncol(newdt2t), ] # Apply is.na function
+  newdt3t <- newdt2t[rowSums(is.na(newdt2t)) != ncol(newdt2t), ] # Apply is.na function. Only delete if entire row is NA
   newdt3 <- data.frame(t(newdt3t))
 
   newdt3$Off.Wrist.REST<-NA
@@ -343,7 +343,7 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
 
   df.means6 <- cbind(newdata,df.means5,newdt4)
   df.means6t <- t(df.means6)
-  df.means7t <- df.means6t[rowSums(is.na(df.means6t)) != ncol(df.means6t), ] # Apply is.na function
+  df.means7t <- df.means6t[rowSums(is.na(df.means6t)) != ncol(df.means6t), ] # Apply is.na function, Only delete if entire row is NA
 
   df.means7<-data.frame(t(gsub("mins", "", df.means7t, fixed = TRUE)))
   names(df.means7) <- gsub(".", "_", names(df.means7), fixed = T)
