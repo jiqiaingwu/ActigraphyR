@@ -136,7 +136,7 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   #----------------------------------------------------------------------------
 
   ##Divided day data and summary data for table 10
-  table10a <- table10[!(dt4$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
+  table10a <- table10[!(table10$`Interval Type` %in%  c("Rest Summary","Active Summary","Sleep Summary","Daily Summary","EXCLUDED")) ,]
 
   ##Convert date variables
   table10a$`Start Date` <- as.Date(as.numeric(table10a$`Start Date`), origin = "1899-12-30")
