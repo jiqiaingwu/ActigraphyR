@@ -15,7 +15,12 @@
 ## Step 7. Data cleaning for byday summary
 ## Step 8. Combine all data together
 
-extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY","REST","SLEEP")){
+extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY","REST","SLEEP"),
+                       calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency"),
+                       calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
+                                                "Off-Wrist","Total AC","Exposure White","Avg White"),
+                       cols_chosen=c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist","Total AC","Onset Latency","Efficiency","WASO",
+                                        "Sleep Time","Fragmentation","Exposure White","Avg White")){
 
 
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
@@ -192,35 +197,50 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   newdt$`Avg White` <- as.numeric(newdt$`Avg White`)
 
 
-  newdt$newstarttime <- difftime(strptime(newdt$`Start Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
-  newdt$newendtime <- difftime(strptime(newdt$`End Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
+  newdt$`Start Time` <- difftime(strptime(newdt$`Start Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
+  newdt$`End Time` <- difftime(strptime(newdt$`End Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
 
   ##Calculate mean value for following variables base on weekdays and weekends.
-  df.means <- aggregate(list(newdt$newstarttime, newdt$newendtime, newdt$Duration, newdt$`Sleep Time`, newdt$WASO, newdt$Fragmentation,
-                             newdt$Efficiency, newdt$`Onset Latency`) ,by=list(newdt$day_cat,newdt$`Interval Type`),mean)
+  newdt <- as.data.table(newdt)
+  df.means <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_byday_chosen]
+
   ##Give name for above variables
-  names(df.means) <- c("day_cat","Interval Type","newstarttime","newendtime","Avg_Duration_byday","Avg_Sleep_Time_byday","Avg_WASO_byday",
-                       "Avg_Fragmentation_byday","Avg_Efficiency_byday", "Avg_Onset_Latency_byday")
+  names(df.means) <- paste0("Avg_", names(df.means),"_byday")
+  names(df.means)[names(df.means) == "Avg_day_cat_byday"] <- "day_cat"
+  names(df.means)[names(df.means) == "Avg_Interval Type_byday"] <- "Interval Type"
+
   ##Convert time variable
-  df.means$avg_starttime_byday <- round((df.means$newstarttime) / 60,2)
-  df.means$avg_endtime_byday <- round((df.means$newendtime) / 60,2)
-  ##Delete previous time variable
-  df.means<-df.means[,-c(3:4),drop=FALSE]
+  if ("Avg_Start Time_byday" %in% colnames(df.means) ==TRUE){
+    df.means$Avg_starttime_byday <- round((df.means$`Avg_Start Time_byday` ) / 60,2)
+    df.means$`Avg_Start Time_byday`<-NULL
+  }
+
+  if ("Avg_End Time_byday" %in% colnames(df.means) ==TRUE){
+    df.means$Avg_endtime_byday <- round((df.means$`Avg_End Time_byday` ) / 60,2)
+    df.means$`Avg_End Time_byday`<-NULL
+  }
 
   na.omit=T
+
   ##Calculate mean value for following variables base on interval type.
-  df.means1 <- aggregate(list(newdt$newstarttime, newdt$newendtime, newdt$Duration, newdt$`Sleep Time`, newdt$WASO, newdt$Fragmentation,
-                              newdt$Efficiency, newdt$`Onset Latency`,newdt$`Off-Wrist`,newdt$`Total AC`,newdt$`Exposure White`,newdt$`Avg White`)
-                         ,by=list(newdt$`Interval Type`),mean)
+  df.means1 <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_overall_chosen]
+
   ##Give name for above variables
-  names(df.means1) <- c("Interval Type","newstarttime","newendtime","Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
-                        "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
-                        "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall")
-  ##Convert time variable
-  df.means1$avg_starttime_overall <- round((df.means1$newstarttime) / 60,2)
-  df.means1$avg_endtime_overall <- round((df.means1$newendtime) / 60,2)
-  ##Delete previous time variable
-  df.means1<-df.means1[,-c(2:3),drop=FALSE]
+  names(df.means1) <- paste0("Avg_", names(df.means1),"_overall")
+  names(df.means1)[names(df.means1) == "Avg_day_cat_overall"] <- "day_cat"
+  names(df.means1)[names(df.means1) == "Avg_Interval Type_overall"] <- "Interval Type"
+
+  ##Convert time variable & Delete previous time variable
+  if ("Avg_Start Time_overall" %in% colnames(df.means1) ==TRUE){
+    df.means1$Avg_starttime_overall <- round((df.means1$`Avg_Start Time_overall` ) / 60,2)
+    df.means1$`Avg_Start Time_overall`<-NULL
+  }
+
+  if ("Avg_End Time_overall" %in% colnames(df.means1) ==TRUE){
+    df.means1$Avg_endtime_overall <- round((df.means1$`Avg_End Time_overall` ) / 60,2)
+    df.means1$`Avg_End Time_overall`<-NULL
+  }
+
 
   #----------------------------------------------------------------------------
 
@@ -232,10 +252,10 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
 
 
   #Melt weekday and weekend into variables. Number of row will change from 8 to 4 to match what we have for overall.
-  df.means3 <- reshape(data=df.means,idvar = "Interval Type", timevar =c("day_cat"), v.names = c("Avg_Duration_byday","Avg_Sleep_Time_byday",
-                                                                                                 "Avg_WASO_byday","Avg_Fragmentation_byday",
-                                                                                                 "Avg_Efficiency_byday","Avg_Onset_Latency_byday",
-                                                                                                 "avg_starttime_byday","avg_endtime_byday"), direction="wide")
+  df.means_name<-df.means[,grep("Avg_", names(df.means), value=TRUE)]
+  df.means3 <- reshape(data=df.means,idvar = "Interval Type", timevar =c("day_cat"), v.names = df.means_name, direction="wide")
+
+
   ##Some variables' value showed the units such as mins.Need to fix it.
   df.means3<-data.frame(gsub("mins", "", t(df.means3), fixed = TRUE))
 
@@ -248,62 +268,20 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   df.means4 <- merge(df.means1,t(df.means3),by="Interval Type")
 
   ##Combine different interval types into one row data
-  df.means5 <- reshape(data=df.means4,idvar = "ID", timevar =c("Interval Type"), v.names = c("Avg_Duration_overall","Avg_Sleep_Time_overall","Avg_WASO_overall",
-                                                                                             "Avg_Fragmentation_overall","Avg_Efficiency_overall","Avg_Onset_Latency_overall","Avg_Off_Wrist_overall",
-                                                                                             "Avg_Total_AC_overall","Avg_Exp_White_overall","Avg_Avg_White_overall","avg_starttime_overall",
-                                                                                             "avg_endtime_overall","Avg_Duration_weekday","Avg_Sleep_Time_weekday",
-                                                                                             "Avg_WASO_weekday","Avg_Fragmentation_weekday","Avg_Efficiency_weekday","Avg_Onset_Latency_weekday",
-                                                                                             "avg_starttime_weekday","avg_endtime_weekday","Avg_Duration_weekend","Avg_Sleep_Time_weekend",
-                                                                                             "Avg_WASO_weekend","Avg_Fragmentation_weekend","Avg_Efficiency_weekend","Avg_Onset_Latency_weekend",
-                                                                                             "avg_starttime_weekend","avg_endtime_weekend"), direction="wide")
+  df.means4_name<-df.means[,grep("Avg_", names(df.means4), value=TRUE)]
 
-  df.means5$Avg_Duration_overall.DAILY<-NA
-  df.means5$Avg_Sleep_Time_overall.DAILY<-NA
-  df.means5$Avg_WASO_overall.DAILY<-NA
-  df.means5$Avg_WASO_overall.REST<-NA
-  df.means5$Avg_Fragmentation_overall.DAILY<-NA
-  df.means5$Avg_Fragmentation_overall.REST<-NA
-  df.means5$Avg_Off_Wrist_overall.SLEEP<-NA
-  df.means5$Avg_Off_Wrist_overall.REST<-NA
-  df.means5$Avg_Total_AC_overall.SLEEP<-NA
-  df.means5$Avg_Total_AC_overall.REST<-NA
-  df.means5$Avg_Exp_White_overall.SLEEP<-NA
-  df.means5$Avg_Exp_White_overall.REST<-NA
-  df.means5$Avg_Avg_White_overall.SLEEP<-NA
-  df.means5$Avg_Avg_White_overall.REST<-NA
-  df.means5$avg_starttime_overall.DAILY<-NA
-  df.means5$avg_endtime_overall.DAILY<-NA
-
-
-  df.means5$Avg_Duration_weekday.DAILY<-NA
-  df.means5$Avg_Duration_weekend.DAILY<-NA
-  df.means5$Avg_Sleep_Time_weekday.DAILY<-NA
-  df.means5$Avg_Sleep_Time_weekend.DAILY<-NA
-  df.means5$Avg_WASO_weekday.DAILY<-NA
-  df.means5$Avg_WASO_weekend.DAILY<-NA
-  df.means5$Avg_WASO_weekday.REST<-NA
-  df.means5$Avg_WASO_weekend.REST<-NA
-  df.means5$Avg_Fragmentation_weekday.DAILY<-NA
-  df.means5$Avg_Fragmentation_weekend.DAILY<-NA
-  df.means5$Avg_Fragmentation_weekday.REST<-NA
-  df.means5$Avg_Fragmentation_weekend.REST<-NA
-  df.means5$avg_starttime_weekday.DAILY<-NA
-  df.means5$avg_starttime_weekend.DAILY<-NA
-  df.means5$avg_endtime_weekday.DAILY<-NA
-  df.means5$avg_endtime_weekend.DAILY<-NA
+  df.means5 <- reshape(data=df.means4,idvar = "ID", timevar =c("Interval Type"), v.names = df.means4_name, direction="wide")
 
   #----------------------------------------------------------------------------
 
-
   ##Select interval type & variables we need
-  newdt1 <- newdt[newdt$`Interval Type` %in% rangetype, c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist",
-                                                                          "Total AC","Onset Latency","Efficiency","WASO",
-                                                                          "Sleep Time","Fragmentation","Exposure White","Avg White")]
+  newdt1 <- newdt[newdt$`Interval Type` %in% rangetype, ..cols_chosen]
+
+  cols_chosen<-cols_chosen[-which(cols_chosen %in% c("Interval Type","Interval#"))]
 
   ##Melt interval type into data, the data will be byday.
-  newdt2 <- reshape(data=newdt1,idvar = "Interval#", timevar =c("Interval Type"), v.names = c("Start Time","End Time","Duration","Off-Wrist",
-                                                                                              "Total AC","Onset Latency","Efficiency","WASO",
-                                                                                              "Sleep Time","Fragmentation","Exposure White","Avg White"), direction="wide")
+  newdt2 <- reshape(data=newdt1,idvar = "Interval#", timevar =c("Interval Type"), v.names = cols_chosen, direction="wide")
+
   ##Rename day variable, clean variable name
   newdt2$`Interval#`<- paste("D",newdt2$`Interval#`)
   newdt2$`Interval#`<-gsub(" ", "", newdt2$`Interval#`, fixed = TRUE)
@@ -314,31 +292,11 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   newdt3t <- newdt2t[rowSums(is.na(newdt2t)) != ncol(newdt2t), ] # Apply is.na function. Only delete if entire row is NA
   newdt3 <- data.frame(t(newdt3t))
 
-  newdt3$Off.Wrist.REST<-NA
-  newdt3$Total.AC.REST<-NA
-  newdt3$WASO.REST<-NA
-  newdt3$Fragmentation.REST<-NA
-  newdt3$Exposure.White.REST<-NA
-  newdt3$Avg.White.REST<-NA
+  var_select<-names(newdt3)
+  var_select<-var_select[-which(var_select %in% c("ID","Interval."))]
 
-  newdt3$Off.Wrist.SLEEP<-NA
-  newdt3$Total.AC.SLEEP<-NA
-  newdt3$Exposure.White.SLEEP<-NA
-  newdt3$Avg.White.SLEEP<-NA
 
-  newdt3$Start.Time.DAILY<-NA
-  newdt3$End.Time.DAILY<-NA
-  newdt3$Duration.DAILY<-NA
-  newdt3$WASO.DAILY<-NA
-  newdt3$Sleep.Time.DAILY<-NA
-  newdt3$Fragmentation.DAILY<-NA
-
-  newdt4 <- reshape(data=newdt3,idvar = "ID", timevar ="Interval.", v.names = c("Duration.REST","Off.Wrist.REST","Total.AC.REST",
-                                                                                "WASO.REST","Sleep.Time.REST","Fragmentation.REST","Exposure.White.REST","Avg.White.REST","Start.Time.SLEEP",
-                                                                                "End.Time.SLEEP","Duration.SLEEP","Off.Wrist.SLEEP","Total.AC.SLEEP","Onset.Latency.SLEEP","Efficiency.SLEEP",
-                                                                                "WASO.SLEEP","Sleep.Time.SLEEP","Fragmentation.SLEEP","Exposure.White.SLEEP","Avg.White.SLEEP","Start.Time.DAILY",
-                                                                                "End.Time.DAILY","Duration.DAILY","Off.Wrist.DAILY","Total.AC.DAILY","WASO.DAILY","Sleep.Time.DAILY",
-                                                                                "Fragmentation.DAILY","Exposure.White.DAILY","Avg.White.DAILY"), direction="wide")
+  newdt4 <- reshape(data=newdt3,idvar = "ID", timevar ="Interval.", v.names = var_select, direction="wide")
   #----------------------------------------------------------------------------
 
   df.means6 <- cbind(newdata,df.means5,newdt4)
