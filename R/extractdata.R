@@ -3,11 +3,11 @@
 #' @param table_raw              Import Actigraphy Raw data
 #' @param initalize              Import Initialize Raw data
 #' @param identifier             Decide if output identifier variables such as Name, Age etc. The default value is False
-#' @param rangetype              Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP.
-#' @param calcols_byday_chosen   Calculate the mean value of columns base on weekday and weekend.
-#' @param calcols_overall_chosen Calculate the overall mean value of columns.
+#' @param rangetype              Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
+#' @param calcols_byday_chosen   Calculate the mean value of columns base on weekday and weekend
+#' @param calcols_overall_chosen Calculate the overall mean value of columns
 #' @param cols_chosen            Select variables to output
-#' @return The final result.
+#' @return The final result
 #' @export
 
 
