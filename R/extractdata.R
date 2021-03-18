@@ -1,12 +1,12 @@
 #' Extract Actigraphy Data to csv file
 #'
-#' @param table_raw              Import Actigraphy Raw data
-#' @param initalize              Import Initialize Raw data
-#' @param identifier             Decide if output identifier variables such as Name, Age etc. The default value is False
-#' @param rangetype              Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
-#' @param calcols_byday_chosen   Calculate the mean value of columns base on weekday and weekend
+#' @param table_raw Import Actigraphy Raw data
+#' @param initalize Import Initialize Raw data
+#' @param identifier Decide if output identifier variables such as Name, Age etc. The default value is False
+#' @param rangetype Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
+#' @param calcols_byday_chosen Calculate the mean value of columns base on weekday and weekend
 #' @param calcols_overall_chosen Calculate the overall mean value of columns
-#' @param cols_chosen            Select variables to output
+#' @param cols_chosen Select variables to output
 #' @return The final result
 #' @export
 
@@ -20,13 +20,14 @@
 ## Step 7. Data cleaning for byday summary
 ## Step 8. Combine all data together
 
-extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY","REST","SLEEP"),
-                       calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency"),
-                       calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
-                                                "Off-Wrist","Total AC","Exposure White","Avg White"),
-                       cols_chosen=c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist","Total AC","Onset Latency","Efficiency","WASO",
-                                        "Sleep Time","Fragmentation","Exposure White","Avg White")){
-
+extractdata = function(table_raw,initalize){
+  identifier=FALSE
+  rangetype=c("DAILY","REST","SLEEP")
+  calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency")
+  calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
+                           "Off-Wrist","Total AC","Exposure White","Avg White")
+  cols_chosen=c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist","Total AC","Onset Latency","Efficiency","WASO",
+                "Sleep Time","Fragmentation","Exposure White","Avg White")
 
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
   split_table <- table_raw %>%
