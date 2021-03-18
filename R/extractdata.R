@@ -1,7 +1,12 @@
 #' Extract Actigraphy Data to csv file
 #'
-#' @param table_raw import Actigraphy Raw data
-#' @param initalize import Initalize Raw data
+#' @param table_raw              Import Actigraphy Raw data
+#' @param initalize              Import Initialize Raw data
+#' @param identifier             Decide if output identifier variables such as Name, Age etc. The default value is False
+#' @param rangetype              Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP.
+#' @param calcols_byday_chosen   Calculate the mean value of columns base on weekday and weekend.
+#' @param calcols_overall_chosen Calculate the overall mean value of columns.
+#' @param cols_chosen            Select variables to output
 #' @return The final result.
 #' @export
 
@@ -55,7 +60,7 @@ extractdata = function(table_raw,initalize,identifier=FALSE,rangetype=c("DAILY",
   if(identifier==TRUE){
     table3<-t(data.frame(split_table[3])[,-3]) #delete the units
   } else if (identifier==FALSE) {
-    table3<-c()
+    table3<-NULL
   }
 
   ##Output Table 5
