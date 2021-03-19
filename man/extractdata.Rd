@@ -4,15 +4,39 @@
 \alias{extractdata}
 \title{Extract Actigraphy Data to csv file}
 \usage{
-extractdata(table_raw, initalize)
+extractdata(
+  table_raw,
+  initalize,
+  identifier = FALSE,
+  rangetype = c("DAILY", "REST", "SLEEP", "ACTIVE"),
+  calcols_byday_chosen = c("Start Time", "End Time", "Duration", "Sleep Time", "WASO",
+    "Fragmentation", "Efficiency", "Onset Latency", "Avg White", "Avg Green", "Avg Red",
+    "Avg Blue"),
+  calcols_overall_chosen = c("Start Time", "End Time", "Duration", "Sleep Time",
+    "WASO", "Fragmentation", "Efficiency", "Onset Latency", "Avg White", "Avg Green",
+    "Avg Red", "Avg Blue"),
+  cols_chosen = c("Interval Type", "Interval#", "Start Time", "End Time", "Duration",
+    "Off-Wrist", "Total AC", "Onset Latency", "Efficiency", "WASO", "Sleep Time",
+    "Fragmentation")
+)
 }
 \arguments{
-\item{table_raw}{import Actigraphy Raw data}
+\item{table_raw}{Import Actigraphy Raw data}
 
-\item{initalize}{import Initalize Raw data}
+\item{initalize}{Import Initialize Raw data}
+
+\item{identifier}{Decide if output identifier variables such as Name, Age etc. The default value is False}
+
+\item{rangetype}{Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP}
+
+\item{calcols_byday_chosen}{Calculate the mean value of columns base on weekday and weekend}
+
+\item{calcols_overall_chosen}{Calculate the overall mean value of columns}
+
+\item{cols_chosen}{Select variables to output for each day. Please note variables Interval Type & Interval# are required in the list}
 }
 \value{
-The final result.
+The final result
 }
 \description{
 Extract Actigraphy Data to csv file

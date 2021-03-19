@@ -2,7 +2,7 @@
 % Please edit documentation in R/vec_rle.R
 \name{vec_rle}
 \alias{vec_rle}
-\title{Utility function to get rle(Compute the lengths and values of runs of equal values in a vector – or the reverse operation) as a named vector}
+\title{Utility function to get rle as a named vector}
 \usage{
 vec_rle(v)
 }
@@ -13,5 +13,5 @@ vec_rle(v)
 The lengths and values of runs of equal values in a vector.
 }
 \description{
-Utility function to get rle(Compute the lengths and values of runs of equal values in a vector – or the reverse operation) as a named vector
+Utility function to get rle as a named vector
 }

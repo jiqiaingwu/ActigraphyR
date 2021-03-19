@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_df_index.R
 \name{make_df_index}
 \alias{make_df_index}
-\title{Utility function to map table with their columns/rows in a bigger table}
+\title{Utility function to map table with their columns/rows in a bigger table (Map Over Multiple Inputs Simultaneously)}
 \usage{
 make_df_index(v)
 }
@@ -13,5 +13,5 @@ make_df_index(v)
 The lengths and values of runs of equal values in a vector.
 }
 \description{
-Utility function to map table with their columns/rows in a bigger table
+Utility function to map table with their columns/rows in a bigger table (Map Over Multiple Inputs Simultaneously)
 }

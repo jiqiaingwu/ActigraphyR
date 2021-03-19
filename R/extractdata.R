@@ -6,7 +6,7 @@
 #' @param rangetype Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
 #' @param calcols_byday_chosen Calculate the mean value of columns base on weekday and weekend
 #' @param calcols_overall_chosen Calculate the overall mean value of columns
-#' @param cols_chosen Select variables to output
+#' @param cols_chosen Select variables to output for each day. Please note variables Interval Type & Interval# are required in the list
 #' @return The final result
 #' @export
 
@@ -20,14 +20,15 @@
 ## Step 7. Data cleaning for byday summary
 ## Step 8. Combine all data together
 
-extractdata = function(table_raw,initalize){
-  identifier=FALSE
-  rangetype=c("DAILY","REST","SLEEP")
-  calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency")
-  calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
-                           "Off-Wrist","Total AC","Exposure White","Avg White")
-  cols_chosen=c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist","Total AC","Onset Latency","Efficiency","WASO",
-                "Sleep Time","Fragmentation","Exposure White","Avg White")
+extractdata = function(table_raw,initalize,  identifier=FALSE,
+                       rangetype=c("DAILY","REST","SLEEP","ACTIVE"),
+                       calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
+                                              "Avg White","Avg Green","Avg Red","Avg Blue"),
+                       calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
+                                                "Avg White","Avg Green","Avg Red","Avg Blue"),
+                       cols_chosen=c("Interval Type","Interval#","Start Time","End Time","Duration","Off-Wrist","Total AC","Onset Latency","Efficiency",
+                                     "WASO","Sleep Time","Fragmentation")){
+
 
   ##The excel sheet contains multiple tables, then I need to find a way to split the tables individually.
   split_table <- table_raw %>%
@@ -207,13 +208,13 @@ extractdata = function(table_raw,initalize){
   newdt$`End Time` <- difftime(strptime(newdt$`End Time`,"%H:%M"),strptime("00:00","%H:%M"), units="mins")
 
   ##Calculate mean value for following variables base on weekdays and weekends.
-  newdt <- as.data.table(newdt)
-  df.means <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_byday_chosen]
+  # df.means <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean, na.rm =T), by = .(day_cat, `Interval Type`), .SDcols = calcols_byday_chosen]
+  df.means <- aggregate(list(newdt[calcols_byday_chosen]) ,by=list(newdt$day_cat,newdt$`Interval Type`),mean)
 
   ##Give name for above variables
   names(df.means) <- paste0("Avg_", names(df.means),"_byday")
-  names(df.means)[names(df.means) == "Avg_day_cat_byday"] <- "day_cat"
-  names(df.means)[names(df.means) == "Avg_Interval Type_byday"] <- "Interval Type"
+  names(df.means)[names(df.means) == "Avg_Group.1_byday"] <- "day_cat"
+  names(df.means)[names(df.means) == "Avg_Group.2_byday"] <- "Interval Type"
 
   ##Convert time variable
   if ("Avg_Start Time_byday" %in% colnames(df.means) ==TRUE){
@@ -226,15 +227,16 @@ extractdata = function(table_raw,initalize){
     df.means$`Avg_End Time_byday`<-NULL
   }
 
-  na.omit=T
 
   ##Calculate mean value for following variables base on interval type.
-  df.means1 <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_overall_chosen]
+  # newdt <- as.data.table(newdt)
+  # df.means1 <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_overall_chosen]
+  df.means1 <- aggregate(list(newdt[calcols_overall_chosen]) ,by=list(newdt$day_cat,newdt$`Interval Type`),mean)
 
   ##Give name for above variables
   names(df.means1) <- paste0("Avg_", names(df.means1),"_overall")
-  names(df.means1)[names(df.means1) == "Avg_day_cat_overall"] <- "day_cat"
-  names(df.means1)[names(df.means1) == "Avg_Interval Type_overall"] <- "Interval Type"
+  names(df.means1)[names(df.means1) == "Avg_Group.1_overall"] <- "day_cat"
+  names(df.means1)[names(df.means1) == "Avg_Group.2_overall"] <- "Interval Type"
 
   ##Convert time variable & Delete previous time variable
   if ("Avg_Start Time_overall" %in% colnames(df.means1) ==TRUE){
@@ -258,7 +260,9 @@ extractdata = function(table_raw,initalize){
 
 
   #Melt weekday and weekend into variables. Number of row will change from 8 to 4 to match what we have for overall.
-  df.means_name<-df.means[,grep("Avg_", names(df.means), value=TRUE)]
+  # df.means_name<-df.means[,grep("Avg_", names(df.means), value=TRUE)]
+  # df.means<-as.data.frame(df.means)
+  df.means_name<-grep("Avg_", names(df.means), value=TRUE)
   df.means3 <- reshape(data=df.means,idvar = "Interval Type", timevar =c("day_cat"), v.names = df.means_name, direction="wide")
 
 
@@ -274,14 +278,15 @@ extractdata = function(table_raw,initalize){
   df.means4 <- merge(df.means1,t(df.means3),by="Interval Type")
 
   ##Combine different interval types into one row data
-  df.means4_name<-df.means[,grep("Avg_", names(df.means4), value=TRUE)]
+  # df.means4_name<-df.means[,grep("Avg_", names(df.means4), value=TRUE)]
+  df.means4_name<-grep("Avg_", names(df.means4), value=TRUE)
 
   df.means5 <- reshape(data=df.means4,idvar = "ID", timevar =c("Interval Type"), v.names = df.means4_name, direction="wide")
 
   #----------------------------------------------------------------------------
 
   ##Select interval type & variables we need
-  newdt1 <- newdt[newdt$`Interval Type` %in% rangetype, ..cols_chosen]
+  newdt1 <- newdt[newdt$`Interval Type` %in% rangetype, cols_chosen]
 
   cols_chosen<-cols_chosen[-which(cols_chosen %in% c("Interval Type","Interval#"))]
 
