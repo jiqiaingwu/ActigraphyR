@@ -9,6 +9,11 @@ extractdata(
   initalize,
   identifier = FALSE,
   rangetype = c("DAILY", "REST", "SLEEP", "ACTIVE"),
+  actiware_property = c("Actiwatch Type:", "Logging Mode:", "Time Zone:",
+    "Epoch Length:", "Number of Days:", "Actiwatch Serial Number:",
+    "Actiwatch Firmware Version:", "Activity Calibration Factor:",
+    "White Calibration Factor:", "Red Calibration Factor:", "Green Calibration Factor:",
+    "Blue Calibration Factor:"),
   calcols_byday_chosen = c("Start Time", "End Time", "Duration", "Sleep Time", "WASO",
     "Fragmentation", "Efficiency", "Onset Latency", "Avg White", "Avg Green", "Avg Red",
     "Avg Blue"),
@@ -28,6 +33,8 @@ extractdata(
 \item{identifier}{Decide if output identifier variables such as Name, Age etc. The default value is False}
 
 \item{rangetype}{Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP}
+
+\item{actiware_property}{Select useful variables in Actiware Data Property section}
 
 \item{calcols_byday_chosen}{Calculate the mean value of columns base on weekday and weekend}
 

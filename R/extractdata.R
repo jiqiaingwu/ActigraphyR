@@ -4,6 +4,7 @@
 #' @param initalize Import Initialize Raw data
 #' @param identifier Decide if output identifier variables such as Name, Age etc. The default value is False
 #' @param rangetype Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
+#' @param actiware_property Select useful variables in Actiware Data Property section
 #' @param calcols_byday_chosen Calculate the mean value of columns base on weekday and weekend
 #' @param calcols_overall_chosen Calculate the overall mean value of columns
 #' @param cols_chosen Select variables to output for each day. Please note variables Interval Type & Interval# are required in the list
@@ -22,6 +23,9 @@
 
 extractdata = function(table_raw,initalize,  identifier=FALSE,
                        rangetype=c("DAILY","REST","SLEEP","ACTIVE"),
+                       actiware_property=c("Actiwatch Type:","Logging Mode:","Time Zone:","Epoch Length:","Number of Days:","Actiwatch Serial Number:",
+                                            "Actiwatch Firmware Version:","Activity Calibration Factor:","White Calibration Factor:",
+                                            "Red Calibration Factor:","Green Calibration Factor:","Blue Calibration Factor:"),
                        calcols_byday_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
                                               "Avg White","Avg Green","Avg Red","Avg Blue"),
                        calcols_overall_chosen=c("Start Time", "End Time", "Duration", "Sleep Time", "WASO", "Fragmentation","Efficiency","Onset Latency",
@@ -50,28 +54,27 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
 
   #----------------------------------------------------------------------------
 
-  ##In table 1, analysis name is the only useful information.
+  ##In table 1, analysis name is the only useful information.Then split it into participant ID and Event time.
   table1<-t(as.data.frame(split_table[1])[3,])
   table1 <- table1[-1, ]
   table1a <- str_split(table1, "_", simplify = TRUE)
-  #dt6 <- as.data.frame(t(dt6[,-3 ]))
   table1a <- table1a[,-3]
   names(table1a) <- c("Participant_ID", "Event Time")
 
-  ##In table 3, all variables are identifiers. The default setting is omitting.
+  ##In table 3, all variables are identifiers. The default setting is omitting.(Subject Property)
   if(identifier==TRUE){
     table3<-t(data.frame(split_table[3])[,-3]) #delete the units
   } else if (identifier==FALSE) {
     table3<-NULL
   }
 
-  ##Output Table 5
+  ##Output Table 5 (Actiwatch Data Property)
   table5<-t(data.frame(split_table[5])[,-3]) #delete the units
 
-  ##Output Table 7
+  ##Output Table 7 (Analysis Output)
   table7<-t(data.frame(split_table[7])[,-3]) #delete the units
 
-  ##Output Table 10, table 9 should be the variable name of table 10. Need to combine them together.
+  ##Output Table 10, table 9 should be the variable name of table 10. Need to combine them together. (Statistics)
   table10<-data.frame(split_table[10])
   colnames(table10) <- data.frame(split_table[9])[1,]
 
@@ -115,35 +118,47 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   ##Only keep number of days, number of weekdays and number of weekends
   big_data1<-big_data[1,4:6]
 
+  ##Combine initialize sheet first 4 key variables with above dataset
   big_data2 <- as.data.frame(cbind.fill(t(initalize1),big_data1))
-  rownames(big_data2) <- c()
+  rownames(big_data2) <- c() #Delete rowname
 
+  ##Format date variable to numeric
   Date_Scored <- big_data2$`Date Scored`
   big_data2$`Date Scored` <- as.numeric(Date_Scored)
   Date_Study<- big_data2$`Date of Study`
   big_data2$`Date of Study` <- as.numeric(Date_Study)
 
+  ##Re-assign to date format
   big_data2$`Date Scored` <- as.Date(as.numeric(big_data2$`Date Scored`),origin = "1899-12-30")
   big_data2$`Date of Study` <- as.Date(as.numeric(big_data2$`Date of Study`),origin = "1899-12-30")
 
   #----------------------------------------------------------------------------
+  colnames(table5) <- table5[1,]
+  table5 <- as.data.frame(table5[-1,actiware_property])
 
-  table5 <-as.data.frame(table5[,c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
+  colnames(table7) <- table7[1,]
+  table7 <- as.data.frame(table7[-1,])
+
+  finaldata <- merge(t(table5),t(table7))
+
+
+  # table5 <-as.data.frame(table5[,c(1,6,7,9,12,13,15,16,17,18,19,20,21)])
   # table5$`Data Collection Start Date:` <- as.Date(as.numeric(table5$`Data Collection Start Date:`), origin = "1899-12-30")
   # table5$`Data Collection End Date:` <- as.Date(as.numeric(table5$`Data Collection End Date:`), origin = "1899-12-30")
 
   #Combine part 2 and part 3 together; correct variable name
-  finaldata <- data.frame(cbind.fill(table5,table7))
-  rownames(finaldata) <- c()
-  colnames(finaldata) <- finaldata[1,]
-  finaldata <- finaldata[-1, ]
+  # finaldata <- data.frame(cbind.fill(table5,table7))
+  # rownames(finaldata) <- c()
+  # colnames(finaldata) <- finaldata[1,]
+  # finaldata <- finaldata[-1, ]
   colnames(finaldata) <- gsub(":", "", colnames(finaldata), fixed = T)
 
   #----------------------------------------------------------------------------
   ##Combine data together
   newdata <- as.data.frame(cbind.fill(t(table1a),big_data2,finaldata))
   rownames(newdata) <- c()
-  newdata<-newdata[,-c(3,12,24,25,27,29)]
+  newdata<-newdata[,-c("Study ID","Time Zone","Wake Threshold Value","Sleep Interval Detection Algorithm","Sleep Onset Setting", "Sleep End Setting")]
+  # newdata<-newdata[,-c(3,12,24,25,27,29)]
 
   #----------------------------------------------------------------------------
 
@@ -180,18 +195,16 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
 
   #----------------------------------------------------------------------------
 
-
-  #initalize2<-as.numeric(unlist(initalize2))
+  ##Convert number of intervals to numeric
   table10a$`Interval#` <- as.numeric(table10a$`Interval#`)
-  #newdt <- table10a[table10a$`Interval#` %in% unique(initalize2), ]
-  ##Select date base on date instead of interval
+  ##Select date base on study date instead of interval number
   newdt <- table10a[!is.na(table10a$`Start Date`) & (table10a$`Start Date` >= big_data2$`Date of Study`) & (table10a$`Start Date` <= (big_data2$`Date of Study`+big_data1$number_days-1)),]
 
   ##Define weekday and weekend in Table 10
   newdt$day_cat <- "weekday"
   newdt$day_cat[newdt$`Start Day` %in% c("Saturday", "Friday")] <- "weekend"
 
-
+  ##Convert multiple variables into numeric
   newdt$Duration <- as.numeric(newdt$Duration)
   newdt$`Sleep Time` <- as.numeric(newdt$`Sleep Time`)
   newdt$WASO <- as.numeric(newdt$`%Wake`)
