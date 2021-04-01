@@ -157,7 +157,7 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   ##Combine data together
   newdata <- as.data.frame(cbind.fill(t(table1a),big_data2,finaldata))
   rownames(newdata) <- c()
-  newdata<-newdata[,-c("Study ID","Time Zone","Wake Threshold Value","Sleep Interval Detection Algorithm","Sleep Onset Setting", "Sleep End Setting")]
+  newdata<-newdata[,-match(c("Study ID","Time Zone","Wake Threshold Value","Sleep Interval Detection Algorithm","Sleep Onset Setting", "Sleep End Setting"),names(newdata))]
   # newdata<-newdata[,-c(3,12,24,25,27,29)]
 
   #----------------------------------------------------------------------------
