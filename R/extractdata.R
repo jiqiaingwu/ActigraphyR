@@ -207,7 +207,7 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   ##Convert multiple variables into numeric
   newdt$Duration <- as.numeric(newdt$Duration)
   newdt$`Sleep Time` <- as.numeric(newdt$`Sleep Time`)
-  newdt$WASO <- as.numeric(newdt$`%Wake`)
+  newdt$WASO <- as.numeric(newdt$WASO)
   newdt$Fragmentation <- as.numeric(newdt$Fragmentation)
   newdt$Efficiency <- as.numeric(newdt$Efficiency)
   newdt$`Onset Latency` <- as.numeric(newdt$`Onset Latency`)
@@ -244,12 +244,12 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   ##Calculate mean value for following variables base on interval type.
   # newdt <- as.data.table(newdt)
   # df.means1 <- newdt[order(day_cat, `Interval Type`), lapply(.SD, mean), by = .(day_cat, `Interval Type`), .SDcols = calcols_overall_chosen]
-  df.means1 <- aggregate(list(newdt[calcols_overall_chosen]) ,by=list(newdt$day_cat,newdt$`Interval Type`),mean)
+  df.means1 <- aggregate(list(newdt[calcols_overall_chosen]) ,by=list(newdt$`Interval Type`),mean)
 
   ##Give name for above variables
   names(df.means1) <- paste0("Avg_", names(df.means1),"_overall")
-  names(df.means1)[names(df.means1) == "Avg_Group.1_overall"] <- "day_cat"
-  names(df.means1)[names(df.means1) == "Avg_Group.2_overall"] <- "Interval Type"
+  # names(df.means1)[names(df.means1) == "Avg_Group.1_overall"] <- "day_cat"
+  names(df.means1)[names(df.means1) == "Avg_Group.1_overall"] <- "Interval Type"
 
   ##Convert time variable & Delete previous time variable
   if ("Avg_Start Time_overall" %in% colnames(df.means1) ==TRUE){
