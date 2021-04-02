@@ -1,18 +1,18 @@
-#' Extract Actigraphy Data to csv file
+#' Process and analyze the Actigraphy Data to csv file
 #'
 #' @param table_raw Import Actigraphy Raw data
 #' @param initalize Import Initialize Raw data
-#' @param identifier Decide if output identifier variables such as Name, Age etc. The default value is False
-#' @param rangetype Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP
-#' @param actiware_property Select useful variables in Actiware Data Property section
-#' @param calcols_byday_chosen Calculate the mean value of columns base on weekday and weekend
+#' @param identifier If False(default), output identifier variables such as Name, Age etc.
+#' @param rangetype Decide which type of interval will be output. The default values are all four intervals: Active, DAILY, REST, SLEEP.
+#' @param actiware_property Output useful variables in Actiware Data Property section
+#' @param calcols_byday_chosen Calculate the mean value of columns by weekday and weekend
 #' @param calcols_overall_chosen Calculate the overall mean value of columns
 #' @param cols_chosen Select variables to output for each day. Please note variables Interval Type & Interval# are required in the list
 #' @return The final result
 #' @export
 
 
-## Step 1. Create cunstomized functions
+## Step 1. Create customized functions
 ## Step 2. Import Raw Data and split into multiple pieces.
 ## Step 3. Start to do the data cleaning, such as format date variables and time variables.
 ## Step 4. The Raw data can be divided by two parts. One part could be directly extract. Another part is byday summary, which need calculations.
@@ -111,7 +111,8 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   big_data$day_cat <- apply(big_data, 1, function(r) any(r %in% c("Monday","Tuesday","Wednesday","Thursday","Sunday")))
   X4 <- big_data$X4
   big_data$X4 <- as.numeric(X4)
-  big_data$number_days<-max(as.numeric(big_data$X4),na.rm=T)
+  big_data$number_days<-nrow(big_data[big_data$X4,])
+  # big_data$number_days<-max(as.numeric(big_data$X4),na.rm=T)
   big_data$weekday <- nrow(big_data[big_data$day_cat == TRUE,])
   big_data$weekendday <- nrow(big_data[big_data$day_cat == FALSE,])
 
@@ -230,14 +231,16 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   names(df.means)[names(df.means) == "Avg_Group.2_byday"] <- "Interval Type"
 
   ##Convert time variable
-  if ("Avg_Start Time_byday" %in% colnames(df.means) ==TRUE){
-    df.means$Avg_starttime_byday <- round((df.means$`Avg_Start Time_byday` ) / 60,2)
-    df.means$`Avg_Start Time_byday`<-NULL
-  }
+  df.means$Avg_starttime_byday <- round((df.means$`Avg_Start.Time_byday` ) / 60,2)
+  #
+  # if ("Avg_Start.Time_byday" %in% colnames(df.means) ==TRUE){
+  #   df.means$Avg_starttime_byday <- round((df.means$`Avg_Start.Time_byday` ) / 60,2)
+  #   df.means$`Avg_Start.Time_byday`<-NULL
+  # }
 
-  if ("Avg_End Time_byday" %in% colnames(df.means) ==TRUE){
-    df.means$Avg_endtime_byday <- round((df.means$`Avg_End Time_byday` ) / 60,2)
-    df.means$`Avg_End Time_byday`<-NULL
+  if ("Avg_End.Time_byday" %in% colnames(df.means) ==TRUE){
+    df.means$Avg_endtime_byday <- round((df.means$`Avg_End.Time_byday` ) / 60,2)
+    df.means$`Avg_End.Time_byday`<-NULL
   }
 
 
@@ -252,14 +255,14 @@ extractdata = function(table_raw,initalize,  identifier=FALSE,
   names(df.means1)[names(df.means1) == "Avg_Group.1_overall"] <- "Interval Type"
 
   ##Convert time variable & Delete previous time variable
-  if ("Avg_Start Time_overall" %in% colnames(df.means1) ==TRUE){
-    df.means1$Avg_starttime_overall <- round((df.means1$`Avg_Start Time_overall` ) / 60,2)
-    df.means1$`Avg_Start Time_overall`<-NULL
+  if ("Avg_Start.Time_overall" %in% colnames(df.means1) ==TRUE){
+    df.means1$Avg_starttime_overall <- round((df.means1$`Avg_Start.Time_overall` ) / 60,2)
+    df.means1$`Avg_Start.Time_overall`<-NULL
   }
 
-  if ("Avg_End Time_overall" %in% colnames(df.means1) ==TRUE){
-    df.means1$Avg_endtime_overall <- round((df.means1$`Avg_End Time_overall` ) / 60,2)
-    df.means1$`Avg_End Time_overall`<-NULL
+  if ("Avg_End.Time_overall" %in% colnames(df.means1) ==TRUE){
+    df.means1$Avg_endtime_overall <- round((df.means1$`Avg_End.Time_overall` ) / 60,2)
+    df.means1$`Avg_End.Time_overall`<-NULL
   }
 
 

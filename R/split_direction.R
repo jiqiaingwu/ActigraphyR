@@ -8,8 +8,8 @@
 split_direction <- function(df,direction = "col"){
   if(direction == "col"){
     col_has_data <- unname(map_lgl(df,~!all(is.na(.x)))) ## map_lgl() returns a logical vector
-    df_mapping <- make_df_index(col_has_data)
-    out <- map(df_mapping,~df[,.x])
+    df_mapping <- make_df_index(col_has_data) ##Count the number of logical vector
+    out <- map(df_mapping,~df[,.x]) ##Output data as a large list
   } else if(direction == "row"){
     row_has_data <- df %>%
       mutate_all(~!is.na(.x)) %>%

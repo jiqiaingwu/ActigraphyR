@@ -2,7 +2,7 @@
 % Please edit documentation in R/extractdata.R
 \name{extractdata}
 \alias{extractdata}
-\title{Extract Actigraphy Data to csv file}
+\title{Process and analyze the Actigraphy Data to csv file}
 \usage{
 extractdata(
   table_raw,
@@ -30,13 +30,13 @@ extractdata(
 
 \item{initalize}{Import Initialize Raw data}
 
-\item{identifier}{Decide if output identifier variables such as Name, Age etc. The default value is False}
+\item{identifier}{If False(default), output identifier variables such as Name, Age etc.}
 
-\item{rangetype}{Decide which type of interval will be output. The default value is all four intervals: Active, DAILY, REST, SLEEP}
+\item{rangetype}{Decide which type of interval will be output. The default values are all four intervals: Active, DAILY, REST, SLEEP.}
 
-\item{actiware_property}{Select useful variables in Actiware Data Property section}
+\item{actiware_property}{Output useful variables in Actiware Data Property section}
 
-\item{calcols_byday_chosen}{Calculate the mean value of columns base on weekday and weekend}
+\item{calcols_byday_chosen}{Calculate the mean value of columns by weekday and weekend}
 
 \item{calcols_overall_chosen}{Calculate the overall mean value of columns}
 
@@ -46,5 +46,5 @@ extractdata(
 The final result
 }
 \description{
-Extract Actigraphy Data to csv file
+Process and analyze the Actigraphy Data to csv file
 }
